@@ -76,6 +76,7 @@
 			b.x = stage.mouseX;
 			b.y = stage.mouseY;
 			stage.addChild(b);
+			b.setScoreText();
 			balls.push(b);
 			Mouse.show();		// show the mouse now
 		}

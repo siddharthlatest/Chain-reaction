@@ -3,6 +3,9 @@
 	import flash.utils.Timer;
 	import flash.events.TimerEvent;
 	import com.coreyoneil.collision.*;
+	import flash.text.TextField;
+	import flash.text.TextFormat;
+	import flash.text.TextFormatAlign;
 	
 	/**
 	 * MotionBalls class name is actually a little misleading since it can create
@@ -25,9 +28,12 @@
 		private static var speedChoices = [-4,-2,-3,3,2,4];	// different speed choices
 		private static var colorChoices = [0xff0000,0x00ff00,0x0000ff,0xffff00,0x00ffff,0xff00ff];
 		
+		private var score:int;
+		private var scoreText:TextField;
+		
 		// Note: Actionscript supports function overloading by providing keyword arguments
 		// to a function (this is different from Java)
-		public function MotionBalls(isStatic:Boolean=false, staticColor:int=0xd3d3d3) {
+		public function MotionBalls(isStatic:Boolean=false, staticColor:int=0xd3d3d3,score:int=1) {
 			var obj_color:ColorTransform;
 			if (!isStatic) {
 			  obj_color = new ColorTransform();
@@ -40,6 +46,8 @@
 				obj_color.color = staticColor;
 				this.transform.colorTransform = obj_color;
 				this.isStatic = true;
+				this.score = score;
+				this.scoreText = new TextField();
 				this.alpha = 0.6;	// keep the expanded balls translucent
 				// Start the timer
 				var timer:Timer = new Timer(popTime*1000, 1);
@@ -57,6 +65,7 @@
 		 */
 		private function axeMe(e:TimerEvent):void {
 			// Prepare to die (ha ha)
+			stage.removeChild(this.scoreText);
 			stage.removeChild(this);
 			ChainReaction.balls.splice(ChainReaction.balls.indexOf(this),1);
 		}
@@ -121,10 +130,12 @@
 			var detectCol:Array = colList.checkCollisions();
 			if (detectCol.length > 0) {
 				// Get a new object now
-				var b:MotionBalls = new MotionBalls(true, transform.colorTransform.color);
+				var oldScore:int  = Math.max(MotionBalls(detectCol[0].object2).score, MotionBalls(detectCol[0].object1).score);
+				var b:MotionBalls = new MotionBalls(true, transform.colorTransform.color, oldScore+1);
 				b.x = this.x;
 				b.y = this.y;
 				stage.addChild(b);
+				b.setScoreText();
 				ChainReaction.balls.push(b);
 				// Axe this poor guy as well.
 				stage.removeChild(this);
@@ -143,6 +154,20 @@
 			  this.width = Math.min(expandRadius, this.width+expandRadius/framesToExpand);
 			  this.height = Math.min(expandRadius, this.height+expandRadius/framesToExpand);
 			}
+		}
+		
+		/**
+		 * Sets the scoreText field based on the score for the ball
+		 * @global_var score (read-only use)
+		 * @global_var scoreText (creates TextField based on score field)
+		 */
+		public function setScoreText():void {
+			scoreText = new TextField();
+			scoreText.textColor = 0xffffff;
+			scoreText.text = "+"+Math.pow(score,3)*100;
+			scoreText.x = this.x - scoreText.textWidth/2;
+			scoreText.y = this.y - scoreText.textHeight/2;
+			stage.addChild(this.scoreText);
 		}
 	}
 }
