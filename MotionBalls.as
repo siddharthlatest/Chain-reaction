@@ -6,6 +6,7 @@
 	import flash.text.TextField;
 	import flash.text.TextFormat;
 	import flash.text.TextFormatAlign;
+	import flash.display.Stage;
 	
 	/**
 	 * MotionBalls class name is actually a little misleading since it can create
@@ -20,12 +21,12 @@
 		private var speedY:Number;
 		
 		private static var expandRadius:int = 100;   	// in pixels
-		private var popTime:int = 8;   		 			// in seconds
+		private var popTime:int = 6;   		 			// in seconds
 
 		private var isStatic:Boolean = false; 			// can the ball move?
 		private static var framesToExpand:int = 24;		// Frames to wait before expanding
 
-		private static var speedChoices = [-4,-2,-3,3,2,4];	// different speed choices
+		private static var speedChoices = [-4,-5,-3,3,5,4];	// different speed choices
 		private static var colorChoices = [0xff0000,0x00ff00,0x0000ff,0xffff00,0x00ffff,0xff00ff];
 		
 		private var score:int;
@@ -47,12 +48,15 @@
 				this.transform.colorTransform = obj_color;
 				this.isStatic = true;
 				this.score = score;
+				Game.updateScore(Math.pow(score,3)*100);
 				this.scoreText = new TextField();
 				this.alpha = 0.6;	// keep the expanded balls translucent
 				// Start the timer
 				var timer:Timer = new Timer(popTime*1000, 1);
 				timer.addEventListener(TimerEvent.TIMER_COMPLETE, axeMe);
 				timer.start();
+				// Update life status 
+				Game.updateLife(true);
 			}
 		}
 		
@@ -65,6 +69,7 @@
 		 */
 		private function axeMe(e:TimerEvent):void {
 			// Prepare to die (ha ha)
+			Game.updateLife(false);
 			stage.removeChild(this.scoreText);
 			stage.removeChild(this);
 			ChainReaction.balls.splice(ChainReaction.balls.indexOf(this),1);
@@ -93,9 +98,7 @@
 		 * Note: stage could be null sometimes, as the object may no longer exist (due to collision)
 		 */
 		public function translate():void {
-			if (stage == null)
-				return;
-			if (this.isStatic)
+			if (stage == null || this.isStatic)
 				return;
 			this.x += this.getSpeedX();
 			this.y += this.getSpeedY();
@@ -144,7 +147,7 @@
 		}
 		
 		// filters static balls from the balls Array
-		private function filterBalls(element:MotionBalls, index:int, array:Array):Boolean {
+		static function filterBalls(element:MotionBalls, index:int, array:Array):Boolean {
 			return element.isStatic;
 		}
 		
@@ -162,12 +165,28 @@
 		 * @global_var scoreText (creates TextField based on score field)
 		 */
 		public function setScoreText():void {
+			if (scoreText != null && stage.contains(scoreText))
+				stage.removeChild(this.scoreText);
 			scoreText = new TextField();
-			scoreText.textColor = 0xffffff;
+			var fontSize:int = 12*Math.pow(stage.stageWidth/500, 1/3);
 			scoreText.text = "+"+Math.pow(score,3)*100;
+			scoreText.setTextFormat(new TextFormat("Arial",fontSize,0xffffff,true));
 			scoreText.x = this.x - scoreText.textWidth/2;
 			scoreText.y = this.y - scoreText.textHeight/2;
 			stage.addChild(this.scoreText);
+		}
+		
+		/**
+		 * Reset the position of the static balls based on the stage dimensions.
+		 * This is a class function, and modifies the scorefield position
+		 */
+		public static function resetStaticBalls():void {
+			var staticBalls:Array = ChainReaction.balls.filter(filterBalls);
+			for (var i:int = 0; i < staticBalls.length; i++) {
+				staticBalls[i].x = staticBalls[i].stage.stageWidth*staticBalls[i].x/ChainReaction.getPreviousStageWidth();
+				staticBalls[i].y = staticBalls[i].stage.stageHeight*staticBalls[i].y/ChainReaction.getPreviousStageHeight();
+				MotionBalls(staticBalls[i]).setScoreText();
+			}
 		}
 	}
 }
